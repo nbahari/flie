@@ -182,10 +182,10 @@ public:
 		return inner_Formula;
 	}
 };
-z3:expr mk_max(z3::expr_vector& variables)
+z3::expr mk_max(z3::expr_vector& variables)
 {
 	z3::expr max = 1;
-	for (z3::expr varaiable: varaibles){
+	for (z3::expr varaiable: variables){
 		max= z3::max(max,variables);
 	}
 	return max;
@@ -194,8 +194,8 @@ z3:expr mk_max(z3::expr_vector& variables)
 z3::expr mk_min(z3::expr_vector& variables)
 {    
 	 z3::expr min=1;
-	   for (z3::expr varaibles: variables){
-		   min = z3::min(min,variable);
+	   for (z3::expr variable: variables){
+		   min = z3::min(min,variables);
 	   }
 	   return min;
 };
@@ -222,10 +222,10 @@ public:
 		z3::expr_vector inner_Formula(context);
 		for (int t = 0; t < word_Size; t++) {
 			inner_Formula.push_back(variables_Y_Word_i_t[word_Index][iteration][t] =
-				(min(variables_Y_Word_i_t[word_Index][j][t],variables_Y_Word_i_t[word_Index][k][t]));
+				(min(variables_Y_Word_i_t[word_Index][j][t],variables_Y_Word_i_t[word_Index][k][t])));
 		}
 
-		return z3::mk_max(inner_Formula);
+		return mk_max(inner_Formula);
 	}
 };
 
@@ -240,10 +240,10 @@ public:
 		z3::expr_vector inner_Formula(context);
 		for (int t = 0; t < word_Size; t++) {
 			inner_Formula.push_back(variables_Y_Word_i_t[word_Index][iteration][t] =
-				(max(variables_Y_Word_i_t[word_Index][j][t],variables_Y_Word_i_t[word_Index][k][t]));
+				(max(variables_Y_Word_i_t[word_Index][j][t],variables_Y_Word_i_t[word_Index][k][t])));
 		}
 
-		return z3::mk_min(inner_Formula);
+		return mk_min(inner_Formula);
 	}
 };
 
