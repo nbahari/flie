@@ -1,7 +1,7 @@
 /*
 MIT License
 
-Copyright (c) [2019] [Joshua Blickensdörfer]
+Copyright (c) [2019] [Joshua Blickensdï¿½rfer]
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -51,8 +51,8 @@ public:
 		z3::expr_vector inner_Formula(context);
 
 		for (int t = 0; t < word_Size; t++) {
-			inner_Formula.push_back(variables_Y_Word_i_t[word_Index][iteration][t] ==
-				(!variables_Y_Word_i_t[word_Index][j][t]));
+			inner_Formula.push_back(variables_Y_Word_i_t[word_Index][iteration][t]=
+				(1-variables_Y_Word_i_t[word_Index][j][t]));
 		}
 
 		return z3::mk_and(inner_Formula);
@@ -182,9 +182,23 @@ public:
 		return inner_Formula;
 	}
 };
+z3:expr mk_max(z3::expr_vector& variables)
+{
+	z3::expr max = 1;
+	for (z3::expr varaiable: varaibles){
+		max= z3::max(max,variables);
+	}
+	return max;
+};
 
-
-
+z3::expr mk_min(z3::expr_vector& variables)
+{    
+	 z3::expr min=1;
+	   for (z3::expr varaibles: variables){
+		   min = z3::min(min,variable);
+	   }
+	   return min;
+};
 class Operator_Binary {
 
 public:
@@ -207,11 +221,11 @@ public:
 
 		z3::expr_vector inner_Formula(context);
 		for (int t = 0; t < word_Size; t++) {
-			inner_Formula.push_back(variables_Y_Word_i_t[word_Index][iteration][t] ==
-				(variables_Y_Word_i_t[word_Index][j][t] || variables_Y_Word_i_t[word_Index][k][t]));
+			inner_Formula.push_back(variables_Y_Word_i_t[word_Index][iteration][t] =
+				(min(variables_Y_Word_i_t[word_Index][j][t],variables_Y_Word_i_t[word_Index][k][t]));
 		}
 
-		return z3::mk_and(inner_Formula);
+		return z3::mk_min(inner_Formula);
 	}
 };
 
@@ -225,11 +239,11 @@ public:
 
 		z3::expr_vector inner_Formula(context);
 		for (int t = 0; t < word_Size; t++) {
-			inner_Formula.push_back(variables_Y_Word_i_t[word_Index][iteration][t] ==
-				(variables_Y_Word_i_t[word_Index][j][t] && variables_Y_Word_i_t[word_Index][k][t]));
+			inner_Formula.push_back(variables_Y_Word_i_t[word_Index][iteration][t] =
+				(max(variables_Y_Word_i_t[word_Index][j][t],variables_Y_Word_i_t[word_Index][k][t]));
 		}
 
-		return z3::mk_and(inner_Formula);
+		return z3::mk_max(inner_Formula);
 	}
 };
 

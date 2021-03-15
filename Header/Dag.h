@@ -94,7 +94,8 @@ public:
 	/*
 	Adds the formulas which are needed to construct a DAG with one more node.
 	Adds the formulas which make sure that every node has a parent.
-		iteration: is the index of the new node which is added to the DAG
+		iteration: is the index of the 
+		node which is added to the DAG
 	*/
 	virtual void add_Formulas(int iteration);
 	/*

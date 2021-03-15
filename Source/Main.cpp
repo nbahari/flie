@@ -23,7 +23,7 @@ SOFTWARE.
 */
 
 
-
+#include <bits/stdc++.h> 
 #include <vector>
 #include <fstream>
 #include <string.h>
