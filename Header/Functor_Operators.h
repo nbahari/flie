@@ -186,7 +186,7 @@ z3::expr mk_max(z3::expr_vector& variables)
 {
 	z3::expr max = 1;
 	for (z3::expr varaiable: variables){
-		max= z3::max(max,variables);
+		max= z3::max(max,variable);
 	}
 	return max;
 };
@@ -195,7 +195,7 @@ z3::expr mk_min(z3::expr_vector& variables)
 {    
 	 z3::expr min=1;
 	   for (z3::expr variable: variables){
-		   min = z3::min(min,variables);
+		   min = z3::min(min,variable);
 	   }
 	   return min;
 };
