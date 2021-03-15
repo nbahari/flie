@@ -52,11 +52,11 @@ public:
 	
 	Solve_And_Optimize(){}
 
-	virtual void add(z3::expr expr) {}
+	virtual void add(z3::expr expr) {};
 
-	virtual void add(z3::expr expr, int weight) 
+	virtual void add(z3::expr expr, int weight);
 	
-	virtual void maximize(z3::expr expr){}
+	virtual void maximize(z3::expr expr){};
 
 };
 
