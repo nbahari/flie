@@ -225,7 +225,7 @@ public:
 				(min(variables_Y_Word_i_t[word_Index][j][t],variables_Y_Word_i_t[word_Index][k][t]));
 		}
 
-		return z3::mk_min(inner_Formula);
+		return z3::mk_max(inner_Formula);
 	}
 };
 
@@ -243,7 +243,7 @@ public:
 				(max(variables_Y_Word_i_t[word_Index][j][t],variables_Y_Word_i_t[word_Index][k][t]));
 		}
 
-		return z3::mk_max(inner_Formula);
+		return z3::mk_min(inner_Formula);
 	}
 };
 
