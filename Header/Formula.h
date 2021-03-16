@@ -69,6 +69,8 @@ public:
 
 
 	Sat_Solver(z3::solver& solver):solver(solver){};
+	Sat_Solver(z3::optimize& optimize):optimize(optimize){};
+
 
 	void add(z3::expr expr){
 		solver.add(expr);

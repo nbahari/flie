@@ -185,7 +185,7 @@ public:
 z3::expr mk_max(z3::expr_vector& variables)
 {
 	z3::expr max = 0;
-	for (z3::expr varaiable: variables){
+	for (z3::expr variable: variables){
 		max= z3::max(max,variable);
 	}
 	return max;
