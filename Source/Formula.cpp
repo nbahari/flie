@@ -191,7 +191,15 @@ Node* Formula::build_Tree(z3::model &model, int root, Node** node_Vector, std::v
 			break;
 		}
 	}
-
+    
+		for (int p = 0; p < 2; p++) { 
+		z3::expr param = model.eval(dag->variables_parameter_i_p[root][p]); 
+		if (param.is_numeral()) 
+			root_Node->int_parameter[p] = param.get_numeral_int(); 
+		else 
+			root_Node->int_parameter[p] = -1; 
+	}
+	
 	touched[root] = true;
 	node_Vector[root] = root_Node;
 	return root_Node;
@@ -234,6 +242,24 @@ std::string Formula::find_LTL()
 	return result.second;	
 }
 
+
+void Formula::print_bounds(std::ostream& stream, int a, int b) { 
+	int lowerbound = a; 
+	int upperbound = a + max_Word_Size - b; 
+	if (a != 0 || b != 0) { 
+		stream << "["; 
+		stream << lowerbound; 
+		stream << ","; 
+		if (b > 0) { 
+			stream << upperbound; 
+		} else { 
+			stream << "inf"; 
+		} 
+		stream << ")"; 
+	} 
+} 
+ 
+ 
 std::string Formula::print_Tree(Node *root)
 {
 	std::stringstream result;
@@ -370,10 +396,39 @@ void Formula::set_Grammar(std::vector<std::string>& grammar)
 	context_Free_Grammar = std::unique_ptr<Grammar>(new Grammar(context, *dag.get(), number_Of_Variables, grammar));
 
 	using_Grammar = true;
-}
+
+    static int gcd(int a, int b) 
+{ 
+	if (b == 0) return a; 
+    return gcd(b, a % b); 
+} 
+ 
+static int lcm(int a, int b) 
+{ 
+	return (a*b) / gcd(a, b); 
+} 
+
 
 void Formula::initialize()
 {
+	max_Word_Size = 0; 
+	int max_Word_Prefix = 0; 
+	int word_Period_LCM = 1; 
+	for (std::pair<int, int> word_Size : positive_Sample->sample_Sizes) { 
+		max_Word_Size = std::max(max_Word_Size, word_Size.first); 
+		max_Word_Prefix = std::max(max_Word_Prefix, word_Size.second); 
+		word_Period_LCM = lcm(word_Period_LCM, word_Size.first-word_Size.second); 
+	} 
+	for (std::pair<int, int> word_Size : negative_Sample->sample_Sizes) { 
+		max_Word_Size = std::max(max_Word_Size, word_Size.first); 
+		max_Word_Prefix = std::max(max_Word_Prefix, word_Size.second); 
+		word_Period_LCM = lcm(word_Period_LCM, word_Size.first-word_Size.second); 
+	} 
+	max_Word_Period = max_Word_Prefix + word_Period_LCM; 
+	positive_Sample->max_Word_Size = max_Word_Size; 
+	negative_Sample->max_Word_Size = max_Word_Size; 
+	positive_Sample->max_Word_Period = max_Word_Period; 
+	negative_Sample->max_Word_Period = max_Word_Period;
 	dag->initialize();
 	positive_Sample->initialize();
 	negative_Sample->initialize();

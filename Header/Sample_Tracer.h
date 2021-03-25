@@ -57,6 +57,15 @@ public:
 	*/
 	std::vector<std::vector<z3::expr_vector>> variables_Y_Word_i_t;
 	/*
+
+	The maximum size a word can have (without repetition)
+	*/
+	int max_Word_Size;
+	/*
+	The maximum timestamp we have to check.
+	*/
+	int max_Word_Period;
+	/*
 	Saves all formulas which are used to track the satisfiability of the subformulas.
 	Remains emtpy when an incremental solver is used.
 	*/

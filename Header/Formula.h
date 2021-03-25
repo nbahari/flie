@@ -40,6 +40,7 @@ struct Node
 	int formula;
 	Node *left;
 	Node *right;
+	int int_parameter[2]; 
 };
 
 /*
@@ -180,6 +181,17 @@ protected:
 	/*
 	The context where all expressions are added.
 	*/
+
+	/* 
+	The maximum size a word can have (without repetition) 
+	*/ 
+	int max_Word_Size; 
+ 
+	/* 
+	The maximum timestamp we have to check. 
+	*/ 
+	int max_Word_Period; 
+	/*
 	z3::context context;
 
 	/*
@@ -274,8 +286,14 @@ protected:
 	/*
 	Solves the current iteration with an optimizer.
 	*/
-	std::pair<bool, std::string> solve_Iteration_Optimize();
 
+	std::pair<bool, std::string> solve_Iteration_Optimize();
+    
+	/* 
+	Add an interval representation to the string being constructed. 
+	*/ 
+	virtual void print_bounds(std::ostream& stream, int a, int b); 
+ 
 	/*
 	Constructs a string representing the formula of the tree.
 		root: root of the tree

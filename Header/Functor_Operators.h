@@ -27,6 +27,18 @@ SOFTWARE.
 
 #include <z3++.h>
 #include <vector>
+/*
+Compute `lowerbound`, `upperbound` and `bounds_formula` from node parameters.
+*/
+void make_bounds(z3::expr& lowerbound, z3::expr& upperbound, z3::expr& bounds_formula,
+	const z3::expr& param_a, const z3::expr& param_b, int max_Word_Size, int max_Word_Period);
+
+/*
+Returns a boolean expression which is true if the letter "word[t]" is visited
+at least one time in the given interval.
+*/
+z3::expr is_timestamp_in_bounds(int t, const z3::expr& lowerbound, const z3::expr& upperbound,
+	z3::context& context, int word_Size, int repetition, int max_Word_Period);
 
 class Operator_Unary {
 
@@ -34,7 +46,8 @@ public:
 	Operator_Unary() {};
 	virtual z3::expr make_Inner_Formula(int iteration, int j, int word_Index,
 		z3::context& context, int word_Size, int repetition,
-		std::vector<std::vector<z3::expr_vector>>& variables_Y_Word_i_t)
+		std::vector<std::vector<z3::expr_vector>>& variables_Y_Word_i_t,
+		z3::expr_vector& parameter_p)
 	{
 		return z3::expr(context);
 	};
@@ -45,7 +58,8 @@ class Operator_Not : public Operator_Unary {
 public:
 	z3::expr  make_Inner_Formula(int iteration, int j, int word_Index,
 		z3::context& context, int word_Size, int repetition,
-		std::vector<std::vector<z3::expr_vector>>& variables_Y_Word_i_t)
+		std::vector<std::vector<z3::expr_vector>>& variables_Y_Word_i_t,
+		z3::expr_vector& parameter_p)
 	{
 
 		z3::expr_vector inner_Formula(context);
@@ -64,7 +78,8 @@ class Operator_Next : public Operator_Unary {
 public:
 	z3::expr  make_Inner_Formula(int iteration, int j, int word_Index,
 		z3::context& context, int word_Size, int repetition,
-		std::vector<std::vector<z3::expr_vector>>& variables_Y_Word_i_t)
+		std::vector<std::vector<z3::expr_vector>>& variables_Y_Word_i_t,
+		z3::expr_vector& parameter_p)
 	{
 
 		z3::expr_vector inner_Formula(context);
@@ -81,30 +96,36 @@ public:
 };
 
 class Operator_Finally : public Operator_Unary {
-
+    int max_Word_Size, max_Word_Period;
 public:
+    
+	Operator_Finally(int max_Word_Size, int max_Word_Period) {
+		this->max_Word_Size = max_Word_Size;
+		this->max_Word_Period = max_Word_Period;
+	}
+
 	z3::expr  make_Inner_Formula(int iteration, int j, int word_Index,
 		z3::context& context, int word_Size, int repetition,
-		std::vector<std::vector<z3::expr_vector>>& variables_Y_Word_i_t)
+		std::vector<std::vector<z3::expr_vector>>& variables_Y_Word_i_t,
+		z3::expr_vector& parameter_p)
 	{
-
-
-		z3::expr_vector conjunction_Pre_Loop(context);
+		z3::expr lowerbound(context), upperbound(context), bounds_formula(context);
+		make_bounds(lowerbound, upperbound, bounds_formula, parameter_p[0], parameter_p[1], max_Word_Size, max_Word_Period);
 
 		z3::expr_vector conjunction_Outer(context);
 		for (int t = 0; t < word_Size; t++) {
 			int s = t;
-			z3::expr_vector conjunction(context);
+			z3::expr_vector disjunction(context);
 			int stopping_Time = (t <= repetition) ? word_Size - 1 : t - 1;
-			bool last_Loop_Done = false;
-			while (s != stopping_Time || !last_Loop_Done) {
-				if (s == stopping_Time) last_Loop_Done = true;
-				conjunction.push_back(variables_Y_Word_i_t[word_Index][j][s]);
+			while (true) {
+				z3::expr s_In_Bounds = is_timestamp_in_bounds(s, t+lowerbound, t+upperbound, context, word_Size, repetition, max_Word_Period);
+				disjunction.push_back(variables_Y_Word_i_t[word_Index][j][s] && s_In_Bounds);
+				if (s == stopping_Time) break;
 				s = (s < word_Size - 1) ? s + 1 : repetition;
 			}
-			conjunction_Outer.push_back(variables_Y_Word_i_t[word_Index][iteration][t] == z3::mk_or(conjunction));
+			conjunction_Outer.push_back(variables_Y_Word_i_t[word_Index][iteration][t] == z3::mk_or(disjunction));
 		}
-		z3::expr inner_Formula = z3::mk_and(conjunction_Outer);
+		z3::expr inner_Formula = z3::mk_and(conjunction_Outer) && bounds_formula;
 
 		/*
 
@@ -132,34 +153,45 @@ public:
 	}
 };
 
+
 class Operator_Globally : public Operator_Unary {
 
+int max_Word_Size, max_Word_Period;
+
 public:
+	Operator_Globally(int max_Word_Size, int max_Word_Period) {
+		this->max_Word_Size = max_Word_Size;
+		this->max_Word_Period = max_Word_Period;
+	}
+
 	z3::expr  make_Inner_Formula(int iteration, int j, int word_Index,
 		z3::context& context, int word_Size, int repetition,
-		std::vector<std::vector<z3::expr_vector>>& variables_Y_Word_i_t)
+		std::vector<std::vector<z3::expr_vector>>& variables_Y_Word_i_t,
+		z3::expr_vector& parameter_p)
 	{
-		z3::expr_vector conjunction_Pre_Loop(context);
+		z3::expr lowerbound(context), upperbound(context), bounds_formula(context);
+		make_bounds(lowerbound, upperbound, bounds_formula, parameter_p[0], parameter_p[1], max_Word_Size, max_Word_Period);
 
 		z3::expr_vector conjunction_Outer(context);
 		for (int t = 0; t < word_Size; t++) {
 			int s = t;
 			z3::expr_vector conjunction(context);
 			int stopping_Time = (t <= repetition) ? word_Size - 1 : t - 1;
-			bool last_Loop_Done = false;
-			while (s != stopping_Time || !last_Loop_Done) {
-				if (s == stopping_Time) last_Loop_Done = true;
-				conjunction.push_back(variables_Y_Word_i_t[word_Index][j][s]);
+			while (true) {
+				z3::expr s_In_Bounds = is_timestamp_in_bounds(s, t+lowerbound, t+upperbound, context, word_Size, repetition, max_Word_Period);
+				conjunction.push_back(variables_Y_Word_i_t[word_Index][j][s] || !s_In_Bounds);
+				if (s == stopping_Time) break;
 				s = (s < word_Size - 1) ? s + 1 : repetition;
 			}
 			conjunction_Outer.push_back(variables_Y_Word_i_t[word_Index][iteration][t] == z3::mk_and(conjunction));
 		}
-		z3::expr inner_Formula = z3::mk_and(conjunction_Outer);
+		z3::expr inner_Formula = z3::mk_and(conjunction_Outer) && bounds_formula;
 
 
 
 
 		/*
+		z3::expr_vector conjunction_Pre_Loop(context);
 		for (unsigned int t = 0; t < word.second; t++) {
 		z3::expr_vector conjunction(context);
 		for (int s = t; s < word.first.size(); s++) {
@@ -182,18 +214,10 @@ public:
 		return inner_Formula;
 	}
 };
-z3::expr mk_max(z3::expr_vector& variables)
-{
-	z3::expr max = 0;
-	for (z3::expr variable: variables){
-		max= z3::max(max,variable);
-	}
-	return max;
-};
 
-z3::expr mk_min(z3::expr_vector& variables)
+z3::expr mk_min(z3::expr_vector& variables,z3::context& context)
 {    
-	 z3::expr min=1;
+	 z3::expr min=context.real_val("1");
 	   for (z3::expr variable: variables){
 		   min = z3::min(min,variable);
 	   }
@@ -205,7 +229,8 @@ public:
 	Operator_Binary() {};
 	virtual z3::expr make_Inner_Formula(int iteration, int j, int k, int word_Index,
 		z3::context& context, int word_Size, int repetition,
-		std::vector<std::vector<z3::expr_vector>>& variables_Y_Word_i_t)
+		std::vector<std::vector<z3::expr_vector>>& variables_Y_Word_i_t,
+		z3::expr_vector& parameter_p)
 	{
 		return z3::expr(context);
 	};
@@ -216,7 +241,8 @@ class Operator_Or : public Operator_Binary {
 public:
 	z3::expr  make_Inner_Formula(int iteration, int j, int k, int word_Index,
 		z3::context& context, int word_Size, int repetition,
-		std::vector<std::vector<z3::expr_vector>>& variables_Y_Word_i_t)
+		std::vector<std::vector<z3::expr_vector>>& variables_Y_Word_i_t,
+		z3::expr_vector& parameter_p)
 	{
 
 		z3::expr_vector inner_Formula(context);
@@ -234,7 +260,8 @@ class Operator_And : public Operator_Binary {
 public:
 	z3::expr  make_Inner_Formula(int iteration, int j, int k, int word_Index,
 		z3::context& context, int word_Size, int repetition,
-		std::vector<std::vector<z3::expr_vector>>& variables_Y_Word_i_t)
+		std::vector<std::vector<z3::expr_vector>>& variables_Y_Word_i_t,
+		z3::expr_vector& parameter_p)
 	{
 
 		z3::expr_vector inner_Formula(context);
@@ -249,30 +276,47 @@ public:
 
 class Operator_Implies : public Operator_Binary {
 
+int max_Word_Size, max_Word_Period;
+
 public:
-	z3::expr  make_Inner_Formula(int iteration, int j, int k, int word_Index,
-		z3::context& context, int word_Size, int repetition,
-		std::vector<std::vector<z3::expr_vector>>& variables_Y_Word_i_t)
-	{
-
-		z3::expr_vector inner_Formula(context);
-		for (int t = 0; t < word_Size; t++) {
-			inner_Formula.push_back(variables_Y_Word_i_t[word_Index][iteration][t] ==
-				z3::implies(variables_Y_Word_i_t[word_Index][j][t], variables_Y_Word_i_t[word_Index][k][t]));
-		}
-
-		return z3::mk_and(inner_Formula);
+	Operator_Until(int max_Word_Size, int max_Word_Period) {
+		this->max_Word_Size = max_Word_Size;
+		this->max_Word_Period = max_Word_Period;
 	}
-};
 
-class Operator_Until : public Operator_Binary {
-
-public:
 	z3::expr  make_Inner_Formula(int iteration, int j, int k, int word_Index,
 		z3::context& context, int word_Size, int repetition,
-		std::vector<std::vector<z3::expr_vector>>& variables_Y_Word_i_t)
+		std::vector<std::vector<z3::expr_vector>>& variables_Y_Word_i_t,
+		z3::expr_vector& parameter_p)
 	{
+		z3::expr lowerbound(context), upperbound(context), bounds_formula(context);
+		make_bounds(lowerbound, upperbound, bounds_formula, parameter_p[0], parameter_p[1], max_Word_Size, max_Word_Period);
 
+		z3::expr_vector conjunction_Outer(context);
+		for (int t = 0; t < word_Size; t++) {
+			int s = t;
+			z3::expr_vector disjunction(context);
+			int stopping_Time = (t <= repetition) ? word_Size - 1 : t - 1;
+			while (true) {
+				z3::expr_vector conjunction(context);
+				int q = t;
+				while (q != s) {
+					z3::expr q_In_Bounds = is_timestamp_in_bounds(s, t+lowerbound, t+upperbound, context, word_Size, repetition, max_Word_Period);
+					z3::expr_vector disjunction_q_In_Bound(context);
+					conjunction.push_back(variables_Y_Word_i_t[word_Index][j][q] || !q_In_Bounds);
+					q = (q < word_Size - 1) ? q + 1 : repetition;
+				}
+				z3::expr s_In_Bounds = is_timestamp_in_bounds(s, t+lowerbound, t+upperbound, context, word_Size, repetition, max_Word_Period);
+				conjunction.push_back(variables_Y_Word_i_t[word_Index][k][s] && s_In_Bounds);
+				disjunction.push_back(z3::mk_and(conjunction));
+				if (s == stopping_Time) break;
+				s = (s < word_Size - 1) ? s + 1 : repetition;
+			}
+			conjunction_Outer.push_back(variables_Y_Word_i_t[word_Index][iteration][t] == z3::mk_or(disjunction));
+		}
+		z3::expr inner_Formula = z3::mk_and(conjunction_Outer) && bounds_formula;
+
+		/*
 		z3::expr_vector conjunction_Loop(context);
 
 		for (int t = 0; t < repetition; t++) {
@@ -311,8 +355,8 @@ public:
 
 
 		z3::expr inner_Formula = z3::mk_and(conjunction_Loop);
+		*/
 
 		return inner_Formula;
 	}
 };
-
